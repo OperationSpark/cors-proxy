@@ -36,7 +36,7 @@ jobs:
           --runtime=go119
           --trigger-http
           --allow-unauthenticated
-          --entry-point=ServeShorty
+          --entry-point=CloudFunc
           --max-instances=5
           --project=operationspark-org
           --set-build-env-vars=GOFLAGS=-mod=mod
