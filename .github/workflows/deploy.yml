@@ -1,0 +1,45 @@
+name: Deploy to GCP
+on:
+  push:
+    branches:
+      - "main"
+jobs:
+  build-deploy-cloud-function:
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - id: "auth"
+        uses: "google-github-actions/auth@v0"
+        with:
+          credentials_json: "${{ secrets.GCP_SA_CREDS_JSON }}"
+
+      # Workaround to support Gen2 Cloud Functions
+      # https://github.com/google-github-actions/deploy-cloud-functions/issues/304
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v0"
+
+      - id: "deploy"
+        run: >
+          gcloud
+          functions
+          deploy
+          cors-proxy
+          --gen2
+          --region=us-central1
+          --source=.
+          --runtime=go119
+          --trigger-http
+          --allow-unauthenticated
+          --entry-point=ServeShorty
+          --max-instances=5
+          --project=operationspark-org
+          --set-build-env-vars=GOFLAGS=-mod=mod
+          --set-env-vars=GCP_PROJECT_ID="${{secrets.GCP_PROJECT_ID}}"
+      - id: "trigger-url"
+        run: 'echo "${{ steps.deploy.outputs.url }}"'
